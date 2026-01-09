@@ -13,6 +13,7 @@ authentication:
   clientSecret: YdImL2TpOb120tnerwsmLVJv6F3nHv0o
 platform:
   storage: https://tradalia-server:8452/api/storage
+  data   : https://tradalia-server:8446/api/collector
 messaging:
   address: localhost:8450
   username: rabbit-admin

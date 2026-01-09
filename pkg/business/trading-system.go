@@ -26,6 +26,7 @@ package business
 
 import (
 	"github.com/tradalia/core/auth"
+	"github.com/tradalia/core/req"
 	"github.com/tradalia/portfolio-trader/pkg/db"
 	"github.com/tradalia/portfolio-trader/pkg/platform"
 	"gorm.io/gorm"
@@ -39,6 +40,27 @@ func GetTradingSystems(tx *gorm.DB, c *auth.Context, filter map[string]any, offs
 	}
 
 	return db.GetTradingSystems(tx, filter, offset, limit)
+}
+
+//=============================================================================
+
+func GetTradingSystem(tx *gorm.DB, c *auth.Context, id uint) (*db.TradingSystem, error) {
+	ts,err := db.GetTradingSystemById(tx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if ts == nil {
+		return nil, req.NewNotFoundError("trading system not found : %v", id)
+	}
+
+	if ! c.Session.IsAdmin() {
+		if ts.Username != c.Session.Username {
+			return nil, req.NewForbiddenError("user not allowed : %v", ts.Username)
+		}
+	}
+
+	return ts, nil
 }
 
 //=============================================================================

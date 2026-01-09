@@ -24,4 +24,23 @@ THE SOFTWARE.
 
 package platform
 
+import (
+	"github.com/tradalia/core"
+	"github.com/tradalia/portfolio-trader/pkg/app"
+)
+
+//=============================================================================
+
+var platform *core.Platform
+
+//=============================================================================
+//===
+//=== Init function
+//===
+//=============================================================================
+
+func InitPlatform(cfg *app.Config) {
+	platform = &cfg.Platform
+}
+
 //=============================================================================

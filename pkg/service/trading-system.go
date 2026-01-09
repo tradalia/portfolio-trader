@@ -29,6 +29,8 @@ import (
 	"github.com/tradalia/portfolio-trader/pkg/business"
 	"github.com/tradalia/portfolio-trader/pkg/business/filter"
 	"github.com/tradalia/portfolio-trader/pkg/business/performance"
+	"github.com/tradalia/portfolio-trader/pkg/business/quality"
+	"github.com/tradalia/portfolio-trader/pkg/business/simulation"
 	"github.com/tradalia/portfolio-trader/pkg/db"
 	"gorm.io/gorm"
 )
@@ -53,6 +55,26 @@ func getTradingSystems(c *auth.Context) {
 				return c.ReturnList(list, offset, limit, len(*list))
 			})
 		}
+	}
+
+	c.ReturnError(err)
+}
+
+//=============================================================================
+
+func getTradingSystem(c *auth.Context) {
+	tsId, err := c.GetIdFromUrl()
+
+	if err == nil {
+		err = db.RunInTransaction(func(tx *gorm.DB) error {
+			ts, err2 := business.GetTradingSystem(tx, c, tsId)
+
+			if err2 != nil {
+				return err2
+			}
+
+			return c.ReturnObject(&ts)
+		})
 	}
 
 	c.ReturnError(err)
@@ -170,6 +192,60 @@ func runFilterAnalysis(c *auth.Context) {
 
 //=============================================================================
 
+func runPerformanceAnalysis(c *auth.Context) {
+	tsId, err := c.GetIdFromUrl()
+
+	if err == nil {
+		req := performance.AnalysisRequest{}
+		err = c.BindParamsFromBody(&req)
+
+		if err == nil {
+			err = db.RunInTransaction(func(tx *gorm.DB) error {
+				res, err := business.RunPerformanceAnalysis(tx, c, tsId, &req)
+
+				if err != nil {
+					return err
+				}
+
+				return c.ReturnObject(res)
+			})
+		}
+	}
+
+	c.ReturnError(err)
+}
+
+//=============================================================================
+
+func runQualityAnalysis(c *auth.Context) {
+	tsId, err := c.GetIdFromUrl()
+
+	if err == nil {
+		req := quality.AnalysisRequest{}
+		err = c.BindParamsFromBody(&req)
+
+		if err == nil {
+			err = db.RunInTransaction(func(tx *gorm.DB) error {
+				res, err := business.RunQualityAnalysis(tx, c, tsId, &req)
+
+				if err != nil {
+					return err
+				}
+
+				return c.ReturnObject(res)
+			})
+		}
+	}
+
+	c.ReturnError(err)
+}
+
+//=============================================================================
+//===
+//=== Filter optimization
+//===
+//=============================================================================
+
 func startFilterOptimization(c *auth.Context) {
 	tsId, err := c.GetIdFromUrl()
 
@@ -234,25 +310,56 @@ func getFilterOptimizationInfo(c *auth.Context) {
 }
 
 //=============================================================================
+//===
+//=== Simulation
+//===
+//=============================================================================
 
-func runPerformanceAnalysis(c *auth.Context) {
+func startSimulation(c *auth.Context) {
 	tsId, err := c.GetIdFromUrl()
 
 	if err == nil {
-		req := performance.AnalysisRequest{}
+		req := simulation.Request{}
 		err = c.BindParamsFromBody(&req)
 
 		if err == nil {
 			err = db.RunInTransaction(func(tx *gorm.DB) error {
-				res, err := business.RunPerformanceAnalysis(tx, c, tsId, &req)
+				err2 := business.StartSimulation(tx, c, tsId, &req)
 
-				if err != nil {
-					return err
+				if err2 != nil {
+					return err2
 				}
 
-				return c.ReturnObject(res)
+				return c.ReturnObject(NewStatusOkResponse())
 			})
 		}
+	}
+
+	c.ReturnError(err)
+}
+
+//=============================================================================
+
+func stopSimulation(c *auth.Context) {
+	tsId, err := c.GetIdFromUrl()
+
+	if err == nil {
+		_ = business.StopSimulation(c, tsId)
+		_ = c.ReturnObject(NewStatusOkResponse())
+	}
+
+	c.ReturnError(err)
+}
+
+//=============================================================================
+
+func getSimulationResult(c *auth.Context) {
+	tsId, err := c.GetIdFromUrl()
+
+	if err == nil {
+		res := business.GetSimulationResult(c, tsId)
+		_ = c.ReturnObject(res)
+		return
 	}
 
 	c.ReturnError(err)

@@ -25,12 +25,11 @@ THE SOFTWARE.
 package platform
 
 import (
-	"github.com/tradalia/core"
-	"github.com/tradalia/core/auth"
-	"github.com/tradalia/core/req"
-	"github.com/tradalia/portfolio-trader/pkg/app"
 	"log/slog"
 	"strconv"
+
+	"github.com/tradalia/core/auth"
+	"github.com/tradalia/core/req"
 )
 
 //=============================================================================
@@ -48,19 +47,9 @@ func NewEquityRequest() *EquityRequest {
 }
 
 //=============================================================================
-
-var platform *core.Platform
-
-//=============================================================================
 //===
 //=== Public functions
 //===
-//=============================================================================
-
-func InitPlatform(cfg *app.Config) {
-	platform = &cfg.Platform
-}
-
 //=============================================================================
 
 func SetEquityChart(id uint, er *EquityRequest) error {

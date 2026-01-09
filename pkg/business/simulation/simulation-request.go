@@ -22,55 +22,17 @@ THE SOFTWARE.
 */
 //=============================================================================
 
-package business
-
-import (
-	"time"
-
-	"github.com/tradalia/core/auth"
-	"github.com/tradalia/core/req"
-	"github.com/tradalia/portfolio-trader/pkg/db"
-	"gorm.io/gorm"
-)
+package simulation
 
 //=============================================================================
 
-func getTradingSystemAndCheckAccess(tx *gorm.DB, c *auth.Context, id uint) (*db.TradingSystem, error){
-	ts, err := db.GetTradingSystemById(tx, id)
-	if err != nil {
-		c.Log.Error("getTradingSystem: Cannot get the trading system", "id", id, "error", err)
-		return nil, err
-	}
-
-	if ts == nil {
-		return nil, req.NewNotFoundError("Trading system was not found: %v", id)
-	}
-
-	if ! c.Session.IsAdmin() {
-		if ts.Username != c.Session.Username {
-			return nil, req.NewForbiddenError("Trading system not owned by user: %v", id)
-		}
-	}
-
-	return ts, nil
-}
-
-//=============================================================================
-
-func calcBackPeriod(daysBack int) *time.Time {
-	//--- All
-
-	if daysBack == 0 {
-		return nil
-	}
-
-	//--- Specific last days
-
-	fromTime := time.Now().UTC()
-	back     := time.Hour * time.Duration(24 * daysBack)
-	fromTime = fromTime.Add(-back)
-
-	return &fromTime
+type Request struct {
+	DaysBack        int      `json:"daysBack"       binding:"max=20000"`
+	Runs            int      `json:"runs"           binding:"max=50000"`
+	Width           int      `json:"width"          binding:"max=4000"`
+	Height          int      `json:"height"         binding:"max=3000"`
+	InitialCapital  float64  `json:"initialCapital" binding:"min=1"`
+	RuinPercentage  int      `json:"ruinPercentage" binding:"min=5,max=95"`
 }
 
 //=============================================================================

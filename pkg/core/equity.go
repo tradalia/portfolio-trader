@@ -146,3 +146,16 @@ func CalcAverageTrade(profits []float64, filter []int8) float64 {
 }
 
 //=============================================================================
+
+func CalcMin(data []float64) float64 {
+	minv := data[0]
+	for _, value := range data {
+		if value < minv {
+			minv = value
+		}
+	}
+
+	return minv
+}
+
+//=============================================================================

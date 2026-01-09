@@ -25,52 +25,61 @@ THE SOFTWARE.
 package business
 
 import (
-	"time"
-
 	"github.com/tradalia/core/auth"
 	"github.com/tradalia/core/req"
+	"github.com/tradalia/portfolio-trader/pkg/business/simulation"
+	"github.com/tradalia/portfolio-trader/pkg/core"
 	"github.com/tradalia/portfolio-trader/pkg/db"
 	"gorm.io/gorm"
 )
 
 //=============================================================================
 
-func getTradingSystemAndCheckAccess(tx *gorm.DB, c *auth.Context, id uint) (*db.TradingSystem, error){
-	ts, err := db.GetTradingSystemById(tx, id)
+func StartSimulation(tx *gorm.DB, c *auth.Context, tsId uint, rq *simulation.Request) error {
+	//--- Get trading system
+
+	ts, err := getTradingSystemAndCheckAccess(tx, c, tsId)
 	if err != nil {
-		c.Log.Error("getTradingSystem: Cannot get the trading system", "id", id, "error", err)
-		return nil, err
+		return err
 	}
 
-	if ts == nil {
-		return nil, req.NewNotFoundError("Trading system was not found: %v", id)
+	c.Log.Info("StartSimulation: Starting", "id", tsId, "name", ts.Name, "runs", rq.Runs)
+
+	fromTime := calcBackPeriod(rq.DaysBack)
+
+	trades, err := db.FindTradesByTsIdFromTime(tx, ts.Id, fromTime, nil)
+	if err != nil {
+		return err
 	}
 
-	if ! c.Session.IsAdmin() {
-		if ts.Username != c.Session.Username {
-			return nil, req.NewForbiddenError("Trading system not owned by user: %v", id)
-		}
+	if len(*trades) == 0 {
+		return req.NewUnprocessableEntityError("no trades found for given time")
 	}
 
-	return ts, nil
+	risk,err := core.CalcRisk(trades)
+	if err != nil {
+		return err
+	}
+
+	simulation.Start(rq, ts, trades, risk)
+	c.Log.Info("StartSimulation: Ending", "id", tsId, "name", ts.Name, "runs", rq.Runs)
+	return nil
 }
 
 //=============================================================================
 
-func calcBackPeriod(daysBack int) *time.Time {
-	//--- All
-
-	if daysBack == 0 {
-		return nil
-	}
-
-	//--- Specific last days
-
-	fromTime := time.Now().UTC()
-	back     := time.Hour * time.Duration(24 * daysBack)
-	fromTime = fromTime.Add(-back)
-
-	return &fromTime
+func StopSimulation(c *auth.Context, tsId uint) bool {
+	return simulation.Stop(tsId)
 }
 
+//=============================================================================
+
+func GetSimulationResult(c *auth.Context, tsId uint) *simulation.Result {
+	return simulation.GetResult(tsId)
+}
+
+//=============================================================================
+//===
+//=== Private methods
+//===
 //=============================================================================

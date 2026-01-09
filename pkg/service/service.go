@@ -25,12 +25,13 @@ THE SOFTWARE.
 package service
 
 import (
+	"log/slog"
+
+	"github.com/gin-gonic/gin"
 	"github.com/tradalia/core/auth"
 	"github.com/tradalia/core/auth/roles"
 	"github.com/tradalia/core/req"
 	"github.com/tradalia/portfolio-trader/pkg/app"
-	"github.com/gin-gonic/gin"
-	"log/slog"
 )
 
 //=============================================================================
@@ -40,8 +41,9 @@ func Init(router *gin.Engine, cfg *app.Config, logger *slog.Logger) {
 	ctrl := auth.NewOidcController(cfg.Authentication.Authority, req.GetClient("bf"), logger, cfg)
 
 	router.GET   ("/api/portfolio/v1/trading-systems",                         ctrl.Secure(getTradingSystems,         roles.Admin_User_Service))
+	router.GET   ("/api/portfolio/v1/trading-systems/:id",                     ctrl.Secure(getTradingSystem,          roles.Admin_User_Service))
 	router.GET   ("/api/portfolio/v1/trading-systems/:id/trades",              ctrl.Secure(getTrades,                 roles.Admin_User_Service))
-	router.DELETE("/api/portfolio/v1/trading-systems/:id/trades",              ctrl.Secure(deleteTrades,                 roles.Admin_User_Service))
+	router.DELETE("/api/portfolio/v1/trading-systems/:id/trades",              ctrl.Secure(deleteTrades,              roles.Admin_User_Service))
 	router.GET   ("/api/portfolio/v1/trading-systems/:id/filters",             ctrl.Secure(getTradingFilters,         roles.Admin_User_Service))
 	router.POST  ("/api/portfolio/v1/trading-systems/:id/filters",             ctrl.Secure(setTradingFilters,         roles.Admin_User_Service))
 	router.POST  ("/api/portfolio/v1/trading-systems/:id/filter-analysis",     ctrl.Secure(runFilterAnalysis,         roles.Admin_User_Service))
@@ -50,10 +52,15 @@ func Init(router *gin.Engine, cfg *app.Config, logger *slog.Logger) {
 	router.POST  ("/api/portfolio/v1/trading-systems/:id/activation",          ctrl.Secure(setTradingSystemActivation,roles.Admin_User_Service))
 	router.POST  ("/api/portfolio/v1/trading-systems/:id/active",              ctrl.Secure(setTradingSystemActive,    roles.Admin_User_Service))
 	router.POST  ("/api/portfolio/v1/trading-systems/:id/performance-analysis",ctrl.Secure(runPerformanceAnalysis,    roles.Admin_User_Service))
+	router.POST  ("/api/portfolio/v1/trading-systems/:id/quality-analysis",    ctrl.Secure(runQualityAnalysis,        roles.Admin_User_Service))
 
 	router.GET   ("/api/portfolio/v1/trading-systems/:id/filter-optimization", ctrl.Secure(getFilterOptimizationInfo, roles.Admin_User_Service))
 	router.POST  ("/api/portfolio/v1/trading-systems/:id/filter-optimization", ctrl.Secure(startFilterOptimization,   roles.Admin_User_Service))
 	router.DELETE("/api/portfolio/v1/trading-systems/:id/filter-optimization", ctrl.Secure(stopFilterOptimization,    roles.Admin_User_Service))
+
+	router.GET   ("/api/portfolio/v1/trading-systems/:id/simulation",          ctrl.Secure(getSimulationResult,       roles.Admin_User_Service))
+	router.POST  ("/api/portfolio/v1/trading-systems/:id/simulation",          ctrl.Secure(startSimulation,           roles.Admin_User_Service))
+	router.DELETE("/api/portfolio/v1/trading-systems/:id/simulation",          ctrl.Secure(stopSimulation,            roles.Admin_User_Service))
 
 	router.GET   ("/api/inventory/v1/portfolios",                              ctrl.Secure(getPortfolios,             roles.Admin_User_Service))
 	router.GET   ("/api/inventory/v1/portfolio/tree",                          ctrl.Secure(getPortfolioTree,          roles.Admin_User_Service))

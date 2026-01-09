@@ -28,6 +28,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/tradalia/core/req"
 	"github.com/tradalia/portfolio-trader/pkg/db"
 )
 
@@ -59,6 +60,59 @@ func ToNonZeroDailyReturnSlice(list *[]db.DailyReturn) []float64 {
 	}
 
 	return res
+}
+
+//=============================================================================
+
+func CalcRisk(trades *[]db.Trade) (float64, error) {
+	//--- Step 1: calculate distribution of losses
+
+	counts := map[float64]int{}
+
+	for _, t := range *trades {
+		profit := t.GrossProfit
+		if profit < 0 {
+			count, ok := counts[profit]
+			if !ok {
+				counts[profit] = 1
+			} else {
+				counts[profit] = count + 1
+			}
+		}
+	}
+
+	//--- Step 2: find the stop loss (the loss with most hits)
+
+	stopLoss  := 0.0
+	bestCount := 0
+
+	for loss, count := range counts {
+		if count > bestCount {
+			stopLoss  = loss
+			bestCount = count
+		}
+	}
+
+	if bestCount == 0 {
+		return 0, req.NewUnprocessableEntityError("no losses found")
+	}
+
+	return math.Abs(stopLoss), nil
+}
+
+//=============================================================================
+
+func CalcRMultiple(trades *[]db.Trade, tradeType string, risk float64, costPerOper float64) []float64 {
+	var list []float64
+
+	for _, t := range *trades {
+		if tradeType == db.TradeTypeAll || tradeType == t.TradeType {
+			returns := t.GrossProfit - 2 * costPerOper
+			list = append(list, returns / risk)
+		}
+	}
+
+	return list
 }
 
 //=============================================================================
