@@ -202,8 +202,10 @@ func calcDistributions(res *AnalysisResponse, returns *[]db.DailyReturn) {
 	list := core.ToNonZeroDailyReturnSlice(returns)
 	dist.Daily = calcDistribution(list)
 
-	dist.AnnualSharpeRatio = core.Trunc2d(dist.Daily.SharpeRatio * 16)
-	dist.AnnualStandardDev = core.Trunc2d(dist.Daily.StandardDev * 16)
+	if dist.Daily != nil {
+		dist.AnnualSharpeRatio = core.Trunc2d(dist.Daily.SharpeRatio * 16)
+		dist.AnnualStandardDev = core.Trunc2d(dist.Daily.StandardDev * 16)
+	}
 
 	//--- All (gross + net)
 
